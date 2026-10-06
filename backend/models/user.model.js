@@ -36,6 +36,10 @@ let userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
+    },
+    refreshToken: {
+        type: String,
+        required: true
     }
 });
 
@@ -78,8 +82,13 @@ userSchema.methods.generateRefreshToken = function()
         email: this.email
     };
 
-    return jwt.sign(payload,refreshTokenSecret,{expiresIn:"7d"});
+
+    let token = jwt.sign(payload,refreshTokenSecret,{expiresIn:"7d"});
+
+    this.refreshToken = token;
+    return token;
 }
+
 
 export default mongoose.model("User", userSchema);
 
