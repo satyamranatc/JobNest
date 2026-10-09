@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  /* ==============================
+     BRAND COLORS
+  ============================== */
+  --primary: #635bff;
+  --primary-hover: #5046e5;
+  --primary-light: #eeedff;
+  --secondary: #0f172a;
+  --accent: #06b6d4;
+
+  /* ==============================
+     BACKGROUND COLORS
+  ============================== */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-hover: #f8fafc;
+
+  /* ==============================
+     TEXT COLORS
+  ============================== */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* ==============================
+     BORDERS & SHADOWS
+  ============================== */
+  --border-color: #e2e8f0;
+  --border-focus: #635bff;
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 5%);
+  --shadow-md: 0 4px 12px rgb(15 23 42 / 8%);
+  --shadow-lg: 0 12px 32px rgb(15 23 42 / 10%);
+
+  /* ==============================
+     STATUS COLORS
+  ============================== */
+  --success: #16a34a;
+  --success-light: #dcfce7;
+  --warning: #d97706;
+  --warning-light: #fef3c7;
+  --danger: #dc2626;
+  --danger-light: #fee2e2;
+  --info: #0284c7;
+  --info-light: #e0f2fe;
+
+  /* ==============================
+     INTERVIEW PLATFORM COLORS
+  ============================== */
+  --interview-active: #635bff;
+  --interview-completed: #16a34a;
+  --interview-pending: #d97706;
+  --interview-score: #0d9488;
+  --interview-timer: #ea580c;
+
+  /* ==============================
+     TYPOGRAPHY
+  ============================== */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* ==============================
+     SPACING & LAYOUT
+  ============================== */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --container-width: 1280px;
+  --navbar-height: 72px;
+  --sidebar-width: 260px;
+
+  /* ==============================
+     TRANSITIONS
+  ============================== */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
