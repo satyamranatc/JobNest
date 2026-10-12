@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken"
 import "dotenv/config"
 
 
-userType = {
+let userType = {
     Company: "Company",
     Candidate: "Candidate"
 }
@@ -18,14 +18,14 @@ let userSchema = new mongoose.Schema({
         required: true
     },
     name: {
-        type:String,
+        type: String,
         required: true,
         trim: true,
     },
-    avatar:{
+    avatar: {
         type: String,
         required: true,
-        default:"https://png.pngtree.com/png-clipart/20241125/original/pngtree-cartoon-user-avatar-vector-png-image_17295195.png",
+        default: "https://png.pngtree.com/png-clipart/20241125/original/pngtree-cartoon-user-avatar-vector-png-image_17295195.png",
     },
     email: {
         type: String,
@@ -39,28 +39,26 @@ let userSchema = new mongoose.Schema({
     },
     refreshToken: {
         type: String,
-        required: true
+        default: ""
     }
-},{
+}, {
     timestamps: true
 });
 
-userSchema.pre("save",(req,res)=>{
-    if(this.isModified("password")){
-        this.password = bcrypt.hashSync(this.password,10);
+userSchema.pre("save", function () {
+    if (this.isModified("password")) {
+        this.password = bcrypt.hashSync(this.password, 10);
     }
-
 })
 
 
-userSchema.methods.comparePassword = function(password){
-    return bcrypt.compareSync(password,this.password);
+userSchema.methods.comparePassword = function (password) {
+    return bcrypt.compareSync(password, this.password);
 }
 
 
-userSchema.methods.generateAccessToken = function()
-{
-    let accessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
+userSchema.methods.generateAccessToken = function () {
+    let accessTokenSecret = process.env.JWT_ACCESS_SECRET;
 
     let payload = {
         _id: this._id,
@@ -69,13 +67,12 @@ userSchema.methods.generateAccessToken = function()
         email: this.email
     };
 
-    return jwt.sign(payload,accessTokenSecret,{expiresIn:"1d"});
+    return jwt.sign(payload, accessTokenSecret, { expiresIn: "1d" });
 
 }
 
-userSchema.methods.generateRefreshToken = function()
-{
-    let refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
+userSchema.methods.generateRefreshToken = function () {
+    let refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
 
     let payload = {
         _id: this._id,
@@ -85,7 +82,7 @@ userSchema.methods.generateRefreshToken = function()
     };
 
 
-    let token = jwt.sign(payload,refreshTokenSecret,{expiresIn:"7d"});
+    let token = jwt.sign(payload, refreshTokenSecret, { expiresIn: "7d" });
 
     this.refreshToken = token;
     return token;

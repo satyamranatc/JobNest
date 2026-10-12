@@ -21,9 +21,14 @@ export const login = async (req, res) => {
         {
             let accessToken = user.generateAccessToken();
             let refreshToken = user.generateRefreshToken();
-            return res.status(200).json({ accessToken, refreshToken });
+            await user.save();
+            return res.status(200).json({ 
+                accessToken, 
+                refreshToken,
+                user: { _id: user._id, name: user.name, email: user.email, type: user.type }
+            });
         }
-        return res.status(404).json({ message: "Password is incorrect" });
+        return res.status(400).json({ message: "Password is incorrect" });
     }
     return res.status(404).json({ message: "User not found" });
 }
