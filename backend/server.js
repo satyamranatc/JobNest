@@ -4,6 +4,8 @@ import cors from "cors"
 import dbConfig from "./config/db.js"
 
 import authRoutes from "./routes/auth.routes.js"
+import jobRoutes from "./routes/job.routes.js"
+import applicationRoutes from "./routes/application.routes.js"
 
 
 const app = express();
@@ -15,6 +17,8 @@ dbConfig();
 
 
 app.use("/auth", authRoutes);
+app.use("/job",jobRoutes)
+app.use("/application",applicationRoutes)
 
 
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   MapPin, 
@@ -14,6 +15,9 @@ import {
 } from 'lucide-react';
 
 export default function Jobs() {
+
+  let navigate=useNavigate()
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
   const [appliedJobs, setAppliedJobs] = useState([]);
@@ -107,6 +111,7 @@ export default function Jobs() {
     if (!appliedJobs.includes(id)) {
       setAppliedJobs([...appliedJobs, id]);
     }
+    navigate("/applyForJob")
   };
 
   const toggleSave = (id) => {
