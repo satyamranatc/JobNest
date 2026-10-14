@@ -4,8 +4,8 @@ import cors from "cors"
 import dbConfig from "./config/db.js"
 
 import authRoutes from "./routes/auth.routes.js"
-import jobRoutes from "./routes/job.routes.js"
-import applicationRoutes from "./routes/application.routes.js"
+import jobRoutes from "./routes/job.route.js"
+import applicationRoutes from "./routes/application.route.js"
 
 
 const app = express();
