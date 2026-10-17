@@ -16,12 +16,19 @@ dbConfig();
 
 
 
+// Health & Status check endpoints
+app.get("/status", (req, res) => {
+    res.status(200).json({ status: "OK", message: "Server is healthy and running", uptime: process.uptime() });
+});
+app.get("/", (req, res) => {
+    res.status(200).json({ status: "OK", message: "JobNest API is running" });
+});
+
 app.use("/auth", authRoutes);
-app.use("/job",jobRoutes)
-app.use("/application",applicationRoutes)
-
-
+app.use("/job", jobRoutes);
+app.use("/application", applicationRoutes);
 
 app.listen(process.env.PORT, () => {
-    console.log(`Server is running on port ${process.env.PORT}`)
-})
+    console.log(`Server is running on port ${process.env.PORT}`);
+});
+

@@ -31,4 +31,18 @@ export function roleMiddleware(role) {
         next();
     };
 }
-
+export function optionalAuthMiddleware(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        if (token) {
+            try {
+                const secret = process.env.JWT_ACCESS_SECRET || process.env.ACCESS_TOKEN_SECRET;
+                req.user = jwt.verify(token, secret);
+            } catch {
+                // Ignore token errors for optional auth
+            }
+        }
+    }
+    next();
+}

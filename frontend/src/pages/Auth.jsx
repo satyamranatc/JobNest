@@ -31,7 +31,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/auth/login', loginData);
+      const res = await axios.post('http://localhost:5500/auth/login', loginData);
       
       setMessage({ type: 'success', text: 'Login successful!' });
 
@@ -64,7 +64,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      await axios.post('http://localhost:5000/auth/register', signUpData);
+      await axios.post('http://localhost:5500/auth/register', signUpData);
 
       setMessage({ type: 'success', text: 'Account created! Please log in.' });
 

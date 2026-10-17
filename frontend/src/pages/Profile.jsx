@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   User, 
@@ -9,13 +10,25 @@ import {
   Building2, 
   ArrowLeft,
   Calendar,
-  Sparkles
+  Sparkles,
+  ExternalLink,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  ArrowRight
 } from 'lucide-react';
+
+const BaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5500';
 
 export default function Profile() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Candidate applications state
+  const [applications, setApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -23,17 +36,80 @@ export default function Profile() {
     navigate('/auth');
   };
 
+  const fetchApplications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setAppsLoading(true);
+    try {
+      const res = await axios.get(`${BaseUrl}/application/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.data?.applications) {
+        setApplications(res.data.applications);
+      }
+    } catch (err) {
+      console.error('Failed to fetch candidate applications:', err);
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const rawUser = localStorage.getItem('user');
     if (rawUser) {
       try {
-        setUserData(JSON.parse(rawUser));
+        const parsed = JSON.parse(rawUser);
+        setUserData(parsed);
+        if (parsed.type !== 'Company') {
+          fetchApplications();
+        }
       } catch (err) {
         console.error('Failed to parse user data', err);
       }
     }
     setLoading(false);
   }, []);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'N/A';
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const renderStatusBadge = (status) => {
+    switch (status) {
+      case 'Selected':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Selected
+          </span>
+        );
+      case 'Rejected':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+            <XCircle className="w-3.5 h-3.5" />
+            Rejected
+          </span>
+        );
+      case 'Applied':
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            <Clock className="w-3.5 h-3.5" />
+            Applied
+          </span>
+        );
+    }
+  };
 
   if (loading) {
     return (
@@ -71,7 +147,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] bg-slate-50 py-10 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         
         {/* Navigation Breadcrumb / Back button */}
         <div className="mb-6 flex items-center justify-between">
@@ -88,7 +164,7 @@ export default function Profile() {
         </div>
 
         {/* Profile Card */}
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-8">
           
           {/* Cover Header Banner */}
           <div className="h-32 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 relative">
@@ -229,6 +305,110 @@ export default function Profile() {
           </div>
 
         </div>
+
+        {/* CANDIDATE APPLIED JOBS TABLE */}
+        {!isCompany && (
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Applied Jobs</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Real-time status of all your submitted applications and interview results
+                </p>
+              </div>
+              <span className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl">
+                {applications.length} Applications
+              </span>
+            </div>
+
+            {appsLoading ? (
+              <div className="py-12 text-center text-sm text-slate-400 flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <span>Loading your applications...</span>
+              </div>
+            ) : applications.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mx-auto border border-slate-100">
+                  <Briefcase className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-800">No applications yet</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  You haven't applied to any roles yet. Browse open jobs and submit your profile today.
+                </p>
+                <Link
+                  to="/jobs"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-xs rounded-xl shadow-xs transition"
+                >
+                  <span>Explore Open Jobs</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <th className="pb-3 pr-4">Job Title & Company</th>
+                      <th className="pb-3 px-4">Location & Mode</th>
+                      <th className="pb-3 px-4">Applied Date</th>
+                      <th className="pb-3 px-4">Resume</th>
+                      <th className="pb-3 pl-4 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {applications.map((app) => (
+                      <tr key={app._id} className="hover:bg-slate-50/70 transition">
+                        <td className="py-4 pr-4">
+                          <p className="font-bold text-slate-900 text-sm">
+                            {app.jobId?.title || 'Job Position'}
+                          </p>
+                          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                            {app.jobId?.company?.name || 'Company'}
+                          </p>
+                        </td>
+
+                        <td className="py-4 px-4 text-xs">
+                          <p className="font-medium text-slate-700 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            {app.jobId?.location || 'Remote'}
+                          </p>
+                          <span className="text-[11px] text-slate-400">
+                            {app.jobId?.type || 'Full Time'}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4 text-xs text-slate-500 font-medium">
+                          {formatDate(app.createdAt)}
+                        </td>
+
+                        <td className="py-4 px-4 text-xs">
+                          {app.resume ? (
+                            <a
+                              href={app.resume}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-blue-600 hover:underline inline-flex items-center gap-1 font-semibold"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+
+                        <td className="py-4 pl-4 text-right">
+                          {renderStatusBadge(app.status)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
