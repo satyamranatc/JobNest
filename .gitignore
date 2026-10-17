@@ -1,0 +1,14 @@
+# Environment variables
+.env
+.env.*
+*.env
+*.backup
+!*.env.example
+
+# Dependencies
+node_modules/
+dist/
+
+# System and logs
+.DS_Store
+*.log
