@@ -25,7 +25,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
-const BaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5500';
+const BaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5500').trim().replace(/\/+$/, '');
 
 export default function Jobs() {
   const navigate = useNavigate();

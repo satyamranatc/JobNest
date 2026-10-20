@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+const BaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5500').trim().replace(/\/+$/, '');
+
 export default function Auth() {
   const navigate = useNavigate();
 
@@ -31,7 +33,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5500/auth/login', loginData);
+      const res = await axios.post(`${BaseUrl}/auth/login`, loginData);
       
       setMessage({ type: 'success', text: 'Login successful!' });
 
@@ -64,7 +66,7 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      await axios.post('http://localhost:5500/auth/register', signUpData);
+      await axios.post(`${BaseUrl}/auth/register`, signUpData);
 
       setMessage({ type: 'success', text: 'Account created! Please log in.' });
 

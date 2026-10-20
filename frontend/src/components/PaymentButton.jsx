@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRazorpay } from "react-razorpay";
 
+const BaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5500').trim().replace(/\/+$/, '');
+
 export default function PaymentButton() {
   const { Razorpay } = useRazorpay();
   const [loading, setLoading] = useState(false);
@@ -14,7 +16,7 @@ export default function PaymentButton() {
     try {
       // 1. Create order through Express
       const orderResponse = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/pay`,
+        `${BaseUrl}/pay`,
         {
           method: "POST",
           headers: {
@@ -44,7 +46,7 @@ export default function PaymentButton() {
           try {
             // 3. Verify signature through Express
             const verifyResponse = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL}/payment/verify`,
+              `${BaseUrl}/payment/verify`,
               {
                 method: "POST",
                 headers: {
