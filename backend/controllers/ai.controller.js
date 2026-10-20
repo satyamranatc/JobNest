@@ -1,5 +1,6 @@
 import applicationModel from "../models/application.model.js";
-import { askAi,askFeadBack } from "../utils/askAi.js";
+import { askAi, askFeadBack } from "../utils/askAi.js";
+import { sendApplicationStatusMail } from "../utils/emailUtlity.js";
 
 export async function handleAsk(req, res) {
     try {
@@ -78,6 +79,27 @@ export async function handleFeadback(req, res) {
                 { status: newStatus },
                 { sort: { createdAt: -1 }, new: true }
             );
+        }
+
+        // Trigger Resend email when interview evaluation updates status (Selected/Passed or Rejected)
+        if (updatedApplication?._id) {
+            try {
+                const populatedApp = await applicationModel.findById(updatedApplication._id)
+                    .populate("candidateId", "name email")
+                    .populate({ path: "jobId", select: "title company", populate: { path: "company", select: "name" } });
+
+                if (populatedApp?.candidateId?.email) {
+                    sendApplicationStatusMail({
+                        to: populatedApp.candidateId.email,
+                        candidateName: populatedApp.candidateId.name,
+                        jobTitle: populatedApp.jobId?.title,
+                        companyName: populatedApp.jobId?.company?.name,
+                        status: newStatus
+                    }).catch(e => console.error("[Resend] Failed sending feedback status email:", e));
+                }
+            } catch (errPopulate) {
+                console.error("[Resend] Error populating application for feedback email:", errPopulate);
+            }
         }
 
         return res.status(200).json({

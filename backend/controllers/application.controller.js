@@ -2,17 +2,28 @@ import applicationModel from "../models/application.model.js";
 import { askAi } from "../utils/askAi.js";
 import jobModel from "../models/job.model.js";
 import userModel from "../models/user.model.js";
+import { sendApplicationReceivedMail, sendApplicationStatusMail } from "../utils/emailUtlity.js";
 
 // Apply for a job
 export async function applyJob(req, res) {
     const candidateId = req.user?._id || req.user?.id;
-    let { jobId, resume } = req.body;
+    let { jobId, resume, hasPaid } = req.body;
 
     if (!jobId || !resume) {
         return res.status(400).json({ message: "All fields are required" });
     }
 
     try {
+        // If candidate has already applied for >= 2 jobs, payment is required
+        const previousAppsCount = await applicationModel.countDocuments({ candidateId });
+        if (previousAppsCount >= 2 && !hasPaid) {
+            return res.status(402).json({
+                message: "You have applied for 2 jobs. Please complete payment to apply for additional jobs.",
+                requiresPayment: true,
+                applicationCount: previousAppsCount
+            });
+        }
+
         let newApp = new applicationModel({
             candidateId,
             jobId,
@@ -23,6 +34,16 @@ export async function applyJob(req, res) {
 
         let candidateData = await userModel.findOne({ _id: candidateId }).select("-password");
         let jobData = await jobModel.findOne({ _id: jobId }).populate("company", "name email avatar type");
+
+        // Send email via Resend on application submission
+        if (candidateData?.email) {
+            sendApplicationReceivedMail({
+                to: candidateData.email,
+                candidateName: candidateData.name,
+                jobTitle: jobData?.title,
+                companyName: jobData?.company?.name
+            }).catch(e => console.error("[Resend] Failed to send application received email:", e));
+        }
 
         let interviewSet = null;
         try {
@@ -48,8 +69,6 @@ export async function applyJob(req, res) {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
-
-
 
 // Check status of a single application by ID
 export async function getApplicationStatus(req, res) {
@@ -114,10 +133,23 @@ export async function updateApplicationStatus(req, res) {
             id,
             { status },
             { new: true }
-        );
+        )
+        .populate("candidateId", "name email")
+        .populate({ path: "jobId", select: "title company", populate: { path: "company", select: "name" } });
 
         if (!application) {
             return res.status(404).json({ message: "Application not found" });
+        }
+
+        // Send Resend notification email if candidate passed (Selected) or rejected (Rejected)
+        if (["Selected", "Rejected"].includes(status) && application.candidateId?.email) {
+            sendApplicationStatusMail({
+                to: application.candidateId.email,
+                candidateName: application.candidateId.name,
+                jobTitle: application.jobId?.title,
+                companyName: application.jobId?.company?.name,
+                status
+            }).catch(e => console.error("[Resend] Failed to send status update email:", e));
         }
 
         return res.status(200).json({
@@ -130,4 +162,3 @@ export async function updateApplicationStatus(req, res) {
         return res.status(500).json({ message: "Internal server error" });
     }
 }
-

@@ -21,7 +21,8 @@ import {
   ArrowRight,
   Award,
   TrendingUp,
-  Lightbulb
+  Lightbulb,
+  CreditCard
 } from 'lucide-react';
 
 const BaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5500';
@@ -48,6 +49,14 @@ export default function Jobs() {
   const [isApplying, setIsApplying] = useState(false);
   const [applyError, setApplyError] = useState('');
 
+  // Application Limit & Dummy Payment State
+  const [userApplicationsCount, setUserApplicationsCount] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingJobForApply, setPendingJobForApply] = useState(null);
+  const [pendingResume, setPendingResume] = useState('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentSuccessMessage, setPaymentSuccessMessage] = useState('');
+
   // AI Interview State
   const [interviewRunning, setInterviewRunning] = useState(false);
   const [interviewData, setInterviewData] = useState(null);
@@ -59,6 +68,28 @@ export default function Jobs() {
 
   // Success Notification
   const [notification, setNotification] = useState(null);
+
+  // Fetch logged in candidate's existing applications
+  const fetchUserApplications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await axios.get(`${BaseUrl}/application/user`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data?.applications) {
+        setUserApplicationsCount(res.data.applications.length);
+        const appliedIds = new Set(res.data.applications.map(app => app.jobId?._id || app.jobId));
+        setAppliedJobIds(appliedIds);
+      }
+    } catch (err) {
+      console.error('Error fetching candidate applications:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserApplications();
+  }, []);
 
   // Fetch jobs with filters
   const getAllJobs = async () => {
@@ -135,11 +166,18 @@ export default function Jobs() {
       setApplyError('');
       setShowResumeModal(true);
     } else {
-      executeApply(job._id, candidateResume);
+      // Check if user has already applied for 2 or more jobs
+      if (userApplicationsCount >= 2) {
+        setPendingJobForApply(job);
+        setPendingResume(candidateResume);
+        setShowPaymentModal(true);
+      } else {
+        executeApply(job._id, candidateResume);
+      }
     }
   };
 
-  const executeApply = async (jobId, resume) => {
+  const executeApply = async (jobId, resume, hasPaid = false) => {
     setIsApplying(true);
     setApplyError('');
     const token = localStorage.getItem('token');
@@ -150,6 +188,7 @@ export default function Jobs() {
         {
           jobId,
           resume,
+          hasPaid,
         },
         {
           headers: {
@@ -159,7 +198,9 @@ export default function Jobs() {
       );
 
       setAppliedJobIds((prev) => new Set([...prev, jobId]));
+      setUserApplicationsCount((prev) => prev + 1);
       setShowResumeModal(false);
+      setShowPaymentModal(false);
 
       if (result.data?.interviewSet) {
         let interviewPayload = result.data.interviewSet;
@@ -182,6 +223,13 @@ export default function Jobs() {
         setTimeout(() => setNotification(null), 4000);
       }
     } catch (err) {
+      if (err.response?.status === 402 || err.response?.data?.requiresPayment) {
+        const targetJob = selectedJobForApply || jobs.find((j) => j._id === jobId);
+        setPendingJobForApply(targetJob);
+        setPendingResume(resume);
+        setShowPaymentModal(true);
+        return;
+      }
       const msg = err.response?.data?.message || 'Failed to submit application. Please try again.';
       setApplyError(msg);
       alert(msg);
@@ -197,8 +245,31 @@ export default function Jobs() {
       return;
     }
     if (selectedJobForApply) {
-      executeApply(selectedJobForApply._id, resumeUrlInput.trim());
+      const resume = resumeUrlInput.trim();
+      setShowResumeModal(false);
+      // Check if user has already applied for 2 or more jobs
+      if (userApplicationsCount >= 2) {
+        setPendingJobForApply(selectedJobForApply);
+        setPendingResume(resume);
+        setShowPaymentModal(true);
+      } else {
+        executeApply(selectedJobForApply._id, resume);
+      }
     }
+  };
+
+  const handleDummyPayment = () => {
+    if (!pendingJobForApply) return;
+    setIsProcessingPayment(true);
+    // Simulate dummy payment processing
+    setTimeout(() => {
+      setIsProcessingPayment(false);
+      setPaymentSuccessMessage('Dummy Payment of ₹1 Verified Successfully!');
+      setTimeout(() => {
+        setPaymentSuccessMessage('');
+        executeApply(pendingJobForApply._id, pendingResume || 'https://default-resume.com', true);
+      }, 700);
+    }, 800);
   };
 
   const handleAnswerChange = (index, value) => {
@@ -855,6 +926,87 @@ export default function Jobs() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== DUMMY PAYMENT MODAL (>2 Applications) ===================== */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-100 relative">
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setPaymentSuccessMessage('');
+                }}
+                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4 border border-amber-100">
+                <CreditCard className="w-6 h-6" />
+              </div>
+
+              <h3 className="text-xl font-bold text-slate-900 mb-1">Application Limit Reached</h3>
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                You have already submitted <strong className="text-slate-800">{userApplicationsCount} applications</strong>.
+                Applying for more than 2 jobs requires a small dummy payment.
+              </p>
+
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-slate-700">Target Role</p>
+                  <p className="text-xs text-slate-500 truncate max-w-[200px]">{pendingJobForApply?.title || 'Job Application'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-400 uppercase">Dummy Fee</p>
+                  <p className="text-base font-bold text-indigo-600">₹1</p>
+                </div>
+              </div>
+
+              {paymentSuccessMessage ? (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700 flex items-center gap-2 mb-4">
+                  <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                  <span>{paymentSuccessMessage}</span>
+                </div>
+              ) : null}
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setPaymentSuccessMessage('');
+                  }}
+                  className="px-4 py-2.5 text-sm text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDummyPayment}
+                  disabled={isProcessingPayment || !!paymentSuccessMessage}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-indigo-500/20 transition cursor-pointer disabled:opacity-50"
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : paymentSuccessMessage ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Paid!</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4" />
+                      <span>Pay ₹1 (Dummy)</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
