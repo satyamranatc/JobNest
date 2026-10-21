@@ -1,7 +1,19 @@
 import userModel from "../models/user.model.js";
+import { uploadToCloudinary } from "../config/cloudinaryConfig.js";
 
 export const register = async (req, res) => {
     try {
+        const file =
+            req.file ||
+            req.files?.avatar?.[0] ||
+            req.files?.image?.[0] ||
+            (Array.isArray(req.files) ? req.files[0] : null);
+
+        if (file && (!req.body.avatar || !req.body.avatar.startsWith("http"))) {
+            const uploadResult = await uploadToCloudinary(file, "jobnest/avatars");
+            req.body.avatar = uploadResult.secure_url;
+        }
+
         const user = await userModel.create(req.body);
         res.status(201).json(user);
     } catch (error) {
